@@ -1,0 +1,30 @@
+name: 'Download Previous Workflows Artifacts'
+description: 'Used to download the artifacts from the workflow that triggered a workflow_run event.'
+branding:
+  icon: 'download-cloud'  
+  color: 'green'
+inputs:
+  auth-token:
+    description: 'If you are working in a private repo, you will need to specify the [GitHub secrets token](https://docs.github.com/en/actions/reference/authentication-in-a-workflow)'
+    required: false
+  workflow-run-id:
+    description: 'The ID of the workflow run that has the artifacts to download.'
+    required: true
+runs:
+  using: "composite"
+  steps: 
+    - env:
+        AUTH_TOKEN: ${{ inputs.auth-token }}
+        REPO_NAME: ${{ github.event.repository.full_name }}
+        WORKFLOW_RUN_ID: ${{ inputs.workflow-run-id }}
+      run: |
+        curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${AUTH_TOKEN}" https://api.github.com/repos/"$REPO_NAME"/actions/runs/${WORKFLOW_RUN_ID}/artifacts | jq --compact-output '.artifacts[]' >> workflow-artifacts.json
+        while read -r artifacts; do
+          DOWNLOAD_LOCATION_URL="$(echo "$artifacts" | jq --raw-output '.archive_download_url')"
+          ARTIFACT_NAME="$(echo "$artifacts" | jq --raw-output '.name')"
+          curl --dump-header download-urls.txt -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${AUTH_TOKEN}" "$DOWNLOAD_LOCATION_URL"
+          DOWNLOAD_URL="$(awk '/location:/{print $NF}' download-urls.txt)"
+          wget -O "${ARTIFACT_NAME}".zip $DOWNLOAD_URL
+          unzip "${ARTIFACT_NAME}".zip
+        done < workflow-artifacts.json
+      shell: bash
