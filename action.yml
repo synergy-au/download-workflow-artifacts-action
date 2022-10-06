@@ -11,7 +11,7 @@ inputs:
   workflow-run-id:
     description: 'The ID of the workflow run that has the artifacts to download.'
     default: ${{ github.event.workflow_run.id }}
-    required: false
+    required: true
 runs:
   using: "composite"
   steps: 
