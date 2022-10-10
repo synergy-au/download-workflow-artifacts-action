@@ -6,9 +6,11 @@ branding:
 inputs:
   auth-token:
     description: 'If you are working in a private repo, you will need to specify the [GitHub secrets token](https://docs.github.com/en/actions/reference/authentication-in-a-workflow)'
+    default: ${{ github.token }}
     required: false
   workflow-run-id:
     description: 'The ID of the workflow run that has the artifacts to download.'
+    default: ${{ github.event.workflow_run.id }}
     required: true
 runs:
   using: "composite"
